@@ -1,51 +1,66 @@
 import conf from "../conf/conf";
 import { Client, Account, ID } from "appwrite";
+
 export class AuthService {
   client = new Client();
   account;
 
   constructor() {
     this.client
-      .setEndpoint("https://cloud.appwrite.io/v1")
-      .setProject("66667e23003b05520238");
+      .setEndpoint(conf.appwriteUrl)
+      .setProject(conf.appwriteProjectId);
+
     this.account = new Account(this.client);
   }
 
+  // ✅ Create user account
   async createAccount({ email, password, name }) {
     try {
-      await this.account.create(ID.unique(), email, password, name);
+      const userAccount = await this.account.create(
+        ID.unique(),
+        email,
+        password,
+        name
+      );
       if (userAccount) {
-        //call another method
-        return this.login({ username, password });
-      } else {
-        return userAccount;
+        return await this.login({ email, password });
       }
+      return null;
     } catch (error) {
+      console.error("AuthService :: createAccount :: error", error);
       throw error;
     }
   }
-  async login({ emai, password }) {
+
+  // ✅ Login
+  async login({ email, password }) {
     try {
-      return await this.account.createEmailPasswordSessionl(emai, password);
+      return await this.account.createEmailPasswordSession(email, password);
     } catch (error) {
+      console.error("AuthService :: login :: error", error);
       throw error;
     }
   }
+
+  // ✅ Get current user
   async getCurrentUser() {
     try {
       return await this.account.get();
     } catch (error) {
-      throw error;
+      return null;
     }
-    return null;
   }
+
+  // ✅ Logout
   async logout() {
     try {
-      return await this.account.deleteSessions();
+      await this.account.deleteSessions();
+      return true;
     } catch (error) {
-      throw error;
+      console.error("AuthService :: logout :: error", error);
+      return false;
     }
   }
 }
-const authservice = new AuthService();
-export default authservice;
+
+export default new AuthService();
